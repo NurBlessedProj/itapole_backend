@@ -10,7 +10,20 @@ const adminRoute = require("./routes/admin");
 const app = express();
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+  origin: [
+    "http://localhost:3000", // Your local frontend
+    "https://your-frontend-domain.com", // Your deployed frontend domain
+    "*", // Or allow all origins temporarily for testing
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+// Apply CORS with options
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
