@@ -19,78 +19,49 @@ const cartController = {
         .status(500)
         .json({ message: "Error fetching cart", error: error.message });
     }
-  },
+  }, // In your backend cart controller
   addToCart: async (req, res) => {
     try {
       const { userId, productId, name, price, quantity, image } = req.body;
 
-      if (!userId) {
-        return res.status(400).json({ message: "User ID is required" });
-      }
-
-      if (!productId) {
-        return res.status(400).json({ message: "Product ID is required" });
-      }
-
+      // Find existing cart for user
       let cart = await Cart.findOne({ userId });
+
       if (!cart) {
-        cart = await Cart.create({ userId, items: [] });
+        // Create new cart if doesn't exist
+        cart = new Cart({ userId, items: [] });
       }
 
-      const productIdString = productId.toString();
+      // Check if item already exists
       const existingItemIndex = cart.items.findIndex(
-        (item) => item.productId === productIdString
+        (item) => item.productId === productId
       );
 
       if (existingItemIndex > -1) {
-        // Update existing item - Add new quantity to existing quantity
-        const newQuantity =
-          cart.items[existingItemIndex].quantity + parseInt(quantity);
-
-        // Check if the new total quantity exceeds 10
-        if (newQuantity > 10) {
-          return res.status(400).json({
-            message:
-              "Cannot add more items. Maximum quantity limit (10) would be exceeded.",
-            currentQuantity: cart.items[existingItemIndex].quantity,
-          });
-        }
-
-        cart.items[existingItemIndex] = {
-          ...cart.items[existingItemIndex],
-          quantity: newQuantity,
-          price: price,
-          name: name,
-          image: image,
-        };
+        // Update existing item quantity
+        cart.items[existingItemIndex].quantity = quantity;
       } else {
-        // Check if the new quantity exceeds 10
-        if (parseInt(quantity) > 10) {
-          return res.status(400).json({
-            message: "Cannot add more than 10 items",
-          });
-        }
-
         // Add new item
         cart.items.push({
-          productId: productIdString,
+          productId,
           name,
           price,
-          quantity: parseInt(quantity),
+          quantity,
           image,
         });
       }
 
+      // Save cart
       await cart.save();
 
-      // Return the complete cart
-      const updatedCart = await Cart.findOne({ userId });
-      res.json(updatedCart);
+      res.status(200).json({
+        success: true,
+        items: cart.items,
+      });
     } catch (error) {
-      console.error("Cart addition error:", error);
       res.status(500).json({
-        message: "Error adding to cart",
-        error: error.message,
+        success: false,
+        message: "Error updating cart",
       });
     }
   },
