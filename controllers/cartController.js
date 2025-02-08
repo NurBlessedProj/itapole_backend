@@ -1,6 +1,5 @@
 const Cart = require("../models/Cart");
 
-
 const cartController = {
   getCart: async (req, res) => {
     try {
@@ -20,7 +19,7 @@ const cartController = {
         .status(500)
         .json({ message: "Error fetching cart", error: error.message });
     }
-  }, // In cartController.js
+  },
   addToCart: async (req, res) => {
     try {
       const { userId, productId, name, price, quantity, image } = req.body;
@@ -44,15 +43,34 @@ const cartController = {
       );
 
       if (existingItemIndex > -1) {
-        // Update existing item
+        // Update existing item - Add new quantity to existing quantity
+        const newQuantity =
+          cart.items[existingItemIndex].quantity + parseInt(quantity);
+
+        // Check if the new total quantity exceeds 10
+        if (newQuantity > 10) {
+          return res.status(400).json({
+            message:
+              "Cannot add more items. Maximum quantity limit (10) would be exceeded.",
+            currentQuantity: cart.items[existingItemIndex].quantity,
+          });
+        }
+
         cart.items[existingItemIndex] = {
           ...cart.items[existingItemIndex],
-          quantity: parseInt(quantity),
-          price: price, // Update price in case it changed
-          name: name, // Update name in case it changed
-          image: image, // Update image in case it changed
+          quantity: newQuantity,
+          price: price,
+          name: name,
+          image: image,
         };
       } else {
+        // Check if the new quantity exceeds 10
+        if (parseInt(quantity) > 10) {
+          return res.status(400).json({
+            message: "Cannot add more than 10 items",
+          });
+        }
+
         // Add new item
         cart.items.push({
           productId: productIdString,
